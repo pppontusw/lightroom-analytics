@@ -93,4 +93,4 @@ Filters (date range, picks only, min rating, exclude cameras) are applied across
 
 ## License
 
-See [LICENSE](LICENSE) in this repo.
+This project is licensed under the [MIT License](LICENSE).
