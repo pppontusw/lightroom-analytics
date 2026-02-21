@@ -4,7 +4,7 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from backend.app.config import get_settings
-from backend.app.services.cache import get_filtered_data
+from backend.app.services.cache import InvalidCatalogError, get_filtered_data
 from backend.app.services.catalog_service import discover_catalogs
 
 _VALID_PROPERTIES = {
@@ -18,6 +18,39 @@ _VALID_GROUPINGS = {"day", "week", "month", "quarter", "year"}
 _GROUPING_TO_FREQ = {"day": "D", "week": "W", "month": "M", "quarter": "Q", "year": "Y"}
 
 router = APIRouter()
+
+
+def _get_filtered_data_or_404(
+    cache,
+    catalog: str | None,
+    catalog_dir: str,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    picks_only: bool = False,
+    min_rating: int = 0,
+    exclude_cameras: str = "",
+    exclude_lenses: str = "",
+) -> pd.DataFrame:
+    try:
+        return get_filtered_data(
+            cache=cache,
+            catalog=catalog,
+            catalog_dir=catalog_dir,
+            start_date=start_date,
+            end_date=end_date,
+            picks_only=picks_only,
+            min_rating=min_rating,
+            exclude_cameras=exclude_cameras,
+            exclude_lenses=exclude_lenses,
+        )
+    except InvalidCatalogError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+def _client_key_from_request(request: Request) -> str:
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
 
 
 @router.get("/health")
@@ -35,6 +68,24 @@ def list_catalogs():
 def refresh_cache(request: Request):
     settings = get_settings()
     cache = request.app.state.cache
+
+    client_key = _client_key_from_request(request)
+    if cache.is_refresh_rate_limited(client_key, settings.refresh_rate_limit_per_minute):
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "Refresh rate limit exceeded. "
+                f"Max {settings.refresh_rate_limit_per_minute} request(s) per minute."
+            ),
+        )
+
+    remaining_cooldown = cache.start_manual_refresh(settings.refresh_cooldown_seconds)
+    if remaining_cooldown > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Refresh cooldown active. Try again in {remaining_cooldown} second(s).",
+        )
+
     cache.refresh(settings.catalog_dir)
     return {"status": "ok"}
 
@@ -51,7 +102,7 @@ def overview(
 ):
     settings = get_settings()
     cache = request.app.state.cache
-    df = get_filtered_data(
+    df = _get_filtered_data_or_404(
         cache=cache,
         catalog=catalog,
         catalog_dir=settings.catalog_dir,
@@ -183,7 +234,7 @@ def breakdown(
 
     settings = get_settings()
     cache = request.app.state.cache
-    df = get_filtered_data(
+    df = _get_filtered_data_or_404(
         cache=cache,
         catalog=catalog,
         catalog_dir=settings.catalog_dir,
@@ -303,7 +354,7 @@ def drilldown(
 
     settings = get_settings()
     cache = request.app.state.cache
-    df = get_filtered_data(
+    df = _get_filtered_data_or_404(
         cache=cache,
         catalog=catalog,
         catalog_dir=settings.catalog_dir,
@@ -387,7 +438,7 @@ def comparison(
     cache = request.app.state.cache
 
     # Get data without date filtering — we'll filter each period independently
-    df = get_filtered_data(
+    df = _get_filtered_data_or_404(
         cache=cache,
         catalog=catalog,
         catalog_dir=settings.catalog_dir,
@@ -460,7 +511,7 @@ def heatmap(
 ):
     settings = get_settings()
     cache = request.app.state.cache
-    df = get_filtered_data(
+    df = _get_filtered_data_or_404(
         cache=cache,
         catalog=catalog,
         catalog_dir=settings.catalog_dir,
@@ -517,7 +568,7 @@ def rating_distribution(
 ):
     settings = get_settings()
     cache = request.app.state.cache
-    df = get_filtered_data(
+    df = _get_filtered_data_or_404(
         cache=cache,
         catalog=catalog,
         catalog_dir=settings.catalog_dir,

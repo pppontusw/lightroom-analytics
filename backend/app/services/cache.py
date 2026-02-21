@@ -1,6 +1,9 @@
 import logging
 import threading
+from collections import deque
 from datetime import datetime, timezone
+from math import ceil
+from time import monotonic
 
 import pandas as pd
 
@@ -10,12 +13,18 @@ from backend.app.services.data_reader import read_catalog
 logger = logging.getLogger(__name__)
 
 
+class InvalidCatalogError(ValueError):
+    """Raised when a requested catalog is not in discovered catalogs."""
+
+
 class CatalogCache:
     """In-memory cache of processed catalog DataFrames, keyed by file path."""
 
     def __init__(self):
         self._cache: dict[str, pd.DataFrame] = {}
         self._last_refreshed: dict[str, datetime] = {}
+        self._last_manual_refresh_at: datetime | None = None
+        self._refresh_requests_by_client: dict[str, deque[float]] = {}
         self._lock = threading.Lock()
 
     def get(self, catalog_path: str) -> pd.DataFrame | None:
@@ -70,6 +79,42 @@ class CatalogCache:
         with self._lock:
             return list(self._cache.keys())
 
+    def is_refresh_rate_limited(
+        self,
+        client_key: str,
+        max_requests_per_minute: int,
+    ) -> bool:
+        """Record a refresh attempt and return True if the client is rate limited."""
+        if max_requests_per_minute <= 0:
+            return False
+
+        now = monotonic()
+        window_seconds = 60
+
+        with self._lock:
+            attempts = self._refresh_requests_by_client.setdefault(client_key, deque())
+            cutoff = now - window_seconds
+            while attempts and attempts[0] <= cutoff:
+                attempts.popleft()
+            if len(attempts) >= max_requests_per_minute:
+                return True
+            attempts.append(now)
+            return False
+
+    def start_manual_refresh(self, cooldown_seconds: int) -> int:
+        """Return cooldown seconds remaining, or 0 and mark refresh as started."""
+        now = datetime.now(timezone.utc)
+
+        with self._lock:
+            if cooldown_seconds > 0 and self._last_manual_refresh_at is not None:
+                elapsed = (now - self._last_manual_refresh_at).total_seconds()
+                remaining = cooldown_seconds - elapsed
+                if remaining > 0:
+                    return ceil(remaining)
+
+            self._last_manual_refresh_at = now
+            return 0
+
 
 def get_filtered_data(
     cache: CatalogCache,
@@ -87,16 +132,18 @@ def get_filtered_data(
     If catalog is None, uses the first discovered catalog.
     Returns a filtered copy - never mutates the cache.
     """
+    catalogs = discover_catalogs(catalog_dir)
+    if not catalogs:
+        return pd.DataFrame()
+
+    allowed_catalog_paths = {entry["path"] for entry in catalogs}
+
     if catalog is None:
-        cached = cache.list_cached()
-        if not cached:
-            # Try discovering catalogs first
-            catalogs = discover_catalogs(catalog_dir)
-            if not catalogs:
-                return pd.DataFrame()
-            catalog = catalogs[0]["path"]
-        else:
-            catalog = cached[0]
+        catalog = catalogs[0]["path"]
+    elif catalog not in allowed_catalog_paths:
+        raise InvalidCatalogError(
+            "Invalid catalog path. Use /api/catalogs and provide one of the discovered paths."
+        )
 
     df = cache.get_or_load(catalog)
     df = df.copy()

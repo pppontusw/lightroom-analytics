@@ -3,7 +3,7 @@ import sqlite3
 import pandas as pd
 import pytest
 
-from backend.app.services.cache import CatalogCache, get_filtered_data
+from backend.app.services.cache import CatalogCache, InvalidCatalogError, get_filtered_data
 
 
 def _create_sample_catalog(path):
@@ -273,6 +273,30 @@ class TestRefreshEndpoint:
         # GET falls through to SPA fallback (404), not allowed on POST-only route
         assert response.status_code != 200
 
+    def test_refresh_respects_cooldown(self, client, tmp_path, monkeypatch):
+        monkeypatch.setenv("CATALOG_DIR", str(tmp_path))
+        monkeypatch.setenv("REFRESH_COOLDOWN_SECONDS", "60")
+        monkeypatch.setenv("REFRESH_RATE_LIMIT_PER_MINUTE", "100")
+
+        first = client.post("/api/refresh")
+        second = client.post("/api/refresh")
+
+        assert first.status_code == 200
+        assert second.status_code == 429
+        assert "Refresh cooldown active" in second.json()["detail"]
+
+    def test_refresh_rate_limit(self, client, tmp_path, monkeypatch):
+        monkeypatch.setenv("CATALOG_DIR", str(tmp_path))
+        monkeypatch.setenv("REFRESH_COOLDOWN_SECONDS", "0")
+        monkeypatch.setenv("REFRESH_RATE_LIMIT_PER_MINUTE", "1")
+
+        first = client.post("/api/refresh")
+        second = client.post("/api/refresh")
+
+        assert first.status_code == 200
+        assert second.status_code == 429
+        assert "Refresh rate limit exceeded" in second.json()["detail"]
+
 
 # --- get_filtered_data tests ---
 
@@ -300,6 +324,13 @@ class TestGetFilteredData:
         # Don't pre-load — get_filtered_data should load via get_or_load
         df = get_filtered_data(cache, None, str(tmp_path))
         assert len(df) == 4
+
+    def test_invalid_catalog_rejected(self, tmp_path):
+        _create_sample_catalog(tmp_path / "auto.lrcat")
+        cache = CatalogCache()
+
+        with pytest.raises(InvalidCatalogError):
+            get_filtered_data(cache, "/tmp/not-discovered.lrcat", str(tmp_path))
 
     def test_returns_empty_for_no_catalogs(self, tmp_path):
         cache = CatalogCache()

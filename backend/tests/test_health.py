@@ -29,7 +29,14 @@ def test_spa_fallback_without_dist(client):
 
 
 def test_config_defaults():
-    env_vars = ["CATALOG_DIR", "PORT", "CACHE_REFRESH_HOURS", "LOG_LEVEL"]
+    env_vars = [
+        "CATALOG_DIR",
+        "PORT",
+        "CACHE_REFRESH_HOURS",
+        "REFRESH_COOLDOWN_SECONDS",
+        "REFRESH_RATE_LIMIT_PER_MINUTE",
+        "LOG_LEVEL",
+    ]
     old_values = {k: os.environ.pop(k, None) for k in env_vars}
 
     try:
@@ -37,6 +44,8 @@ def test_config_defaults():
         assert settings.catalog_dir == "/catalogs"
         assert settings.port == 8118
         assert settings.cache_refresh_hours == 4
+        assert settings.refresh_cooldown_seconds == 300
+        assert settings.refresh_rate_limit_per_minute == 10
         assert settings.log_level == "info"
     finally:
         for k, v in old_values.items():
@@ -49,6 +58,8 @@ def test_config_from_env():
         "CATALOG_DIR": "/my/catalogs",
         "PORT": "9999",
         "CACHE_REFRESH_HOURS": "12",
+        "REFRESH_COOLDOWN_SECONDS": "45",
+        "REFRESH_RATE_LIMIT_PER_MINUTE": "3",
         "LOG_LEVEL": "DEBUG",
     }
     old_values = {k: os.environ.get(k) for k in env_overrides}
@@ -59,6 +70,8 @@ def test_config_from_env():
         assert settings.catalog_dir == "/my/catalogs"
         assert settings.port == 9999
         assert settings.cache_refresh_hours == 12
+        assert settings.refresh_cooldown_seconds == 45
+        assert settings.refresh_rate_limit_per_minute == 3
         assert settings.log_level == "debug"
     finally:
         for k, v in old_values.items():
@@ -73,4 +86,6 @@ def test_settings_dataclass_defaults():
     assert defaults.catalog_dir == "/catalogs"
     assert defaults.port == 8118
     assert defaults.cache_refresh_hours == 4
+    assert defaults.refresh_cooldown_seconds == 300
+    assert defaults.refresh_rate_limit_per_minute == 10
     assert defaults.log_level == "info"

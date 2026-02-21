@@ -21,12 +21,11 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-cache = CatalogCache()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    cache = CatalogCache()
 
     # Store cache on app state so routers can access it without circular imports
     app.state.cache = cache

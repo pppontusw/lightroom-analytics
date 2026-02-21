@@ -342,3 +342,8 @@ class TestOverviewWithCatalogParam:
         client, catalog_path = overview_client
         data = client.get(f"/api/overview?catalog={catalog_path}").json()
         assert data["total_photos"] == 4
+
+    def test_rejects_undiscovered_catalog(self, overview_client):
+        client, _ = overview_client
+        response = client.get("/api/overview?catalog=/tmp/not-discovered.lrcat")
+        assert response.status_code == 404
