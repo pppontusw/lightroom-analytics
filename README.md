@@ -2,6 +2,32 @@
 
 A self-contained web app for analyzing **Adobe Lightroom Classic** catalog files (`.lrcat` SQLite databases). Get an interactive dashboard with charts, drilldowns, filtering, and stats on your photo metadata. No database, no auth — it reads your catalogs from a folder and caches everything in memory.
 
+## Screenshots
+
+**Overview**
+
+![Overview](screenshots/overview.webp)
+
+**Gear breakdown**
+
+![Gear breakdown](screenshots/gear.webp)
+
+**Shooting heatmap**
+
+![Shooting heatmap](screenshots/heatmap.webp)
+
+**Drilldown explorer**
+
+![Drilldown explorer](screenshots/drilldown.webp)
+
+**Comparison**
+
+![Comparison](screenshots/comparison.webp)
+
+**Rating analysis**
+
+![Rating analysis](screenshots/rating.webp)
+
 ## Quick start (Docker)
 
 Pull and run the image from GitHub Container Registry. Mount a directory that contains your `.lrcat` file(s):

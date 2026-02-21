@@ -1,6 +1,8 @@
 *.lrcat
 .ticket-runs
 backend/venv
+.venv-screenshots
 __pycache__/
 *.pyc
 .pytest_cache/
+.DS_Store
