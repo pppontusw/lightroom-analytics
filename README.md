@@ -2,31 +2,9 @@
 
 A self-contained web app for analyzing **Adobe Lightroom Classic** catalog files (`.lrcat` SQLite databases). Get an interactive dashboard with charts, drilldowns, filtering, and stats on your photo metadata. No database, no auth — it reads your catalogs from a folder and caches everything in memory.
 
-## Screenshots
+## Demo
 
-**Overview**
-
-![Overview](screenshots/overview.webp)
-
-**Gear breakdown**
-
-![Gear breakdown](screenshots/gear.webp)
-
-**Shooting heatmap**
-
-![Shooting heatmap](screenshots/heatmap.webp)
-
-**Drilldown explorer**
-
-![Drilldown explorer](screenshots/drilldown.webp)
-
-**Comparison**
-
-![Comparison](screenshots/comparison.webp)
-
-**Rating analysis**
-
-![Rating analysis](screenshots/rating.webp)
+Try it without installing anything: there’s a **live clickable demo** at **[https://lightroom-analytics.hawi.me](https://lightroom-analytics.hawi.me)**. It runs with fake/sample data so you can explore the dashboard, charts, drilldowns, and filters before running it with your own catalog.
 
 ## Quick start (Docker)
 
@@ -116,6 +94,32 @@ Filters (date range, picks only, min rating, exclude cameras) are applied across
 
 - `ghcr.io/pppontusw/lightroom-analytics:latest` — latest release (use this for “just run it”).
 - Replace `:latest` with a specific version tag if you pin releases.
+
+## Screenshots
+
+**Overview**
+
+![Overview](screenshots/overview.webp)
+
+**Gear breakdown**
+
+![Gear breakdown](screenshots/gear.webp)
+
+**Shooting heatmap**
+
+![Shooting heatmap](screenshots/heatmap.webp)
+
+**Drilldown explorer**
+
+![Drilldown explorer](screenshots/drilldown.webp)
+
+**Comparison**
+
+![Comparison](screenshots/comparison.webp)
+
+**Rating analysis**
+
+![Rating analysis](screenshots/rating.webp)
 
 ## License
 
