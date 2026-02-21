@@ -1,0 +1,6 @@
+*.lrcat
+.ticket-runs
+backend/venv
+__pycache__/
+*.pyc
+.pytest_cache/

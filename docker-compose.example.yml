@@ -1,0 +1,21 @@
+# Production example for Synology:
+# pull prebuilt image from GHCR and mount one catalog file.
+#
+# Usage:
+#   cp docker-compose.example.yml docker-compose.yml
+#   # Edit the host catalog path below
+#   docker compose up -d
+
+services:
+  lightroom-analytics:
+    image: ghcr.io/pppontusw/lightroom-analytics-priv:latest
+    container_name: lightroom-analytics
+    ports:
+      - "8118:8118"
+    volumes:
+      - /volume1/photo/Lightroom Catalog.lrcat:/catalogs/main.lrcat:ro
+    restart: unless-stopped
+    environment:
+      - CATALOG_DIR=/catalogs
+      - CACHE_REFRESH_HOURS=4
+      - LOG_LEVEL=info

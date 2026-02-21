@@ -1,0 +1,35 @@
+# Development compose: backend and frontend with code mounts and autoreload.
+# Backend: uvicorn --reload on port 8118
+# Frontend: Vite dev server with HMR on port 5183
+# Access the app at http://localhost:5183 (proxies /api to backend)
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8118:8118"
+    volumes:
+      - ./catalogs:/catalogs:ro
+      - ./backend:/app/backend
+    restart: unless-stopped
+    environment:
+      - CATALOG_DIR=/catalogs
+      - LOG_LEVEL=info
+    command: ["python", "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8118", "--reload"]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend-dev
+    ports:
+      - "5183:5183"
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+    environment:
+      - API_PROXY_TARGET=http://backend:8118
+    depends_on:
+      - backend
+
+volumes:
+  frontend_node_modules:
