@@ -349,6 +349,12 @@ class TestGetFilteredData:
         # Should include Image 3 (2023-12-25) and Image 4 (2024-01-10)
         assert len(df) == 2
 
+    def test_date_range_end_includes_entire_day_for_date_only_input(self, loaded_cache, tmp_path):
+        cache, catalog_path = loaded_cache
+        df = get_filtered_data(cache, catalog_path, str(tmp_path), end_date="2024-06-01")
+        # Should include Image 2 shot at 2024-06-01T09:15:00 (same calendar day).
+        assert len(df) == 4
+
     def test_date_range_both(self, loaded_cache, tmp_path):
         cache, catalog_path = loaded_cache
         df = get_filtered_data(

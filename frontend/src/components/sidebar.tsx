@@ -6,8 +6,10 @@ import {
   Layers,
   GitCompareArrows,
   Star,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/theme-context";
 
 const NAV_ITEMS = [
   { to: "/overview", label: "Overview", icon: BarChart3 },
@@ -19,6 +21,8 @@ const NAV_ITEMS = [
 ] as const;
 
 export function Sidebar() {
+  const { openPanel: openThemePanel } = useTheme();
+
   return (
     <aside
       className="flex h-screen w-[220px] shrink-0 flex-col border-r border-[var(--border)] bg-surface-base"
@@ -55,6 +59,27 @@ export function Sidebar() {
             <span className="type-body">{label}</span>
           </NavLink>
         ))}
+
+        {/* Theme customizer */}
+        <div className="mt-4 border-t border-[var(--border-subtle)] pt-4">
+          <button
+            type="button"
+            onClick={openThemePanel}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-[var(--radius-sm)] border-l-2 border-l-transparent px-3 py-2 transition-colors",
+              "text-text-secondary hover:bg-[var(--border-subtle)] hover:text-text-primary",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)]",
+              "active:scale-[0.98]"
+            )}
+            style={{
+              transitionDuration: "var(--duration-fast)",
+              transitionTimingFunction: "var(--ease-out)",
+            }}
+          >
+            <Palette size={16} />
+            <span className="type-body">Theme</span>
+          </button>
+        </div>
       </nav>
     </aside>
   );

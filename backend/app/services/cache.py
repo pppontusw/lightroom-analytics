@@ -1,4 +1,5 @@
 import logging
+import re
 import threading
 from collections import deque
 from datetime import datetime, timezone
@@ -11,6 +12,7 @@ from backend.app.services.catalog_service import discover_catalogs
 from backend.app.services.data_reader import read_catalog
 
 logger = logging.getLogger(__name__)
+_DATE_ONLY_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class InvalidCatalogError(ValueError):
@@ -154,8 +156,13 @@ def get_filtered_data(
         df = df[df["captureTime"] >= start]
 
     if end_date is not None and "captureTime" in df.columns:
-        end = pd.to_datetime(end_date)
-        df = df[df["captureTime"] <= end]
+        if _DATE_ONLY_PATTERN.fullmatch(end_date.strip()):
+            # Treat date-only end bounds as inclusive for the whole calendar day.
+            end_exclusive = pd.to_datetime(end_date) + pd.Timedelta(days=1)
+            df = df[df["captureTime"] < end_exclusive]
+        else:
+            end = pd.to_datetime(end_date)
+            df = df[df["captureTime"] <= end]
 
     # Picks only filter
     if picks_only and "pick" in df.columns:

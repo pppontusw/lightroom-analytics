@@ -1,9 +1,11 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { CatalogProvider } from "@/lib/catalog-context";
 import { FilterProvider } from "@/lib/filter-context";
+import { ThemeProvider } from "@/lib/theme-context";
 import { Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/top-bar";
 import { FilterBar } from "@/components/filter-bar";
+import { ThemePanel } from "@/components/theme-panel";
 import { Overview } from "@/views/overview";
 import { GearBreakdown } from "@/views/gear-breakdown";
 import { ShootingHeatmap } from "@/views/shooting-heatmap";
@@ -13,11 +15,13 @@ import { RatingAnalysis } from "@/views/rating-analysis";
 
 function App() {
   return (
-    <CatalogProvider>
-      <FilterProvider>
-        <div className="flex h-screen bg-surface-base">
-          <Sidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
+    <ThemeProvider>
+      <CatalogProvider>
+        <FilterProvider>
+          <div className="flex h-screen bg-surface-base">
+            <Sidebar />
+            <ThemePanel />
+            <div className="flex min-w-0 flex-1 flex-col">
             <TopBar />
             <FilterBar />
             <main className="flex-1 overflow-auto p-6">
@@ -35,6 +39,7 @@ function App() {
         </div>
       </FilterProvider>
     </CatalogProvider>
+    </ThemeProvider>
   );
 }
 
